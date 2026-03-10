@@ -35,33 +35,38 @@ def line_from_point_normal(x0: float, y0: float, l: float, m: float) -> LineABC:
     return LineABC(A, B, C)
 
 
-def classify_pair(l1: LineABC, l2: LineABC) -> str:
+def _classify_pair_with_det(l1: LineABC, l2: LineABC) -> Tuple[str, float]:
     A1, B1, C1 = l1.A, l1.B, l1.C
     A2, B2, C2 = l2.A, l2.B, l2.C
 
     D = A1 * B2 - A2 * B1
     if abs(D) > EPS:
-        return "intersect"
+        return "intersect", D
 
-    tol = 1e-7
-    if abs(A1 * C2 - A2 * C1) <= tol and abs(B1 * C2 - B2 * C1) <= tol:
-        return "coincident"
+    # CHANGED: removed local tol = 1e-7 and use global EPS consistently.
+    if abs(A1 * C2 - A2 * C1) <= EPS and abs(B1 * C2 - B2 * C1) <= EPS:
+        return "coincident", D
 
-    return "parallel"
+    return "parallel", D
 
+# CHANGED: now classification is delegated to helper above.
+def classify_pair(l1: LineABC, l2: LineABC) -> str:
+    classification, _ = _classify_pair_with_det(l1, l2)
+    return classification
 
+# CHANGED: determinant is reused from helper instead of recalculating it again.
 def intersection_point(l1: LineABC, l2: LineABC) -> Optional[Tuple[float, float]]:
-    if classify_pair(l1, l2) != "intersect":
+    classification, D = _classify_pair_with_det(l1, l2)
+    if classification != "intersect":
         return None
 
     A1, B1, C1 = l1.A, l1.B, l1.C
     A2, B2, C2 = l2.A, l2.B, l2.C
 
-    D = A1 * B2 - A2 * B1
-
     x = (B1 * C2 - B2 * C1) / D
     y = (C1 * A2 - C2 * A1) / D
     return (x, y)
+
 
 
 def _same_point(p1: Tuple[float, float], p2: Tuple[float, float], eps: float = 1e-7) -> bool:

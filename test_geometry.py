@@ -6,6 +6,8 @@ from geometry import (
     classify_pair,
     intersection_point,
     analyze_three,
+    # CHANGED: added direct tests for unique_points.
+    unique_points,
     validate_in_range,
 )
 
@@ -20,6 +22,11 @@ class TestValidation(unittest.TestCase):
     def test_out_of_range(self):
         with self.assertRaises(ValueError):
             validate_in_range([HI + 1e-6], LO, HI)
+
+    # CHANGED: added missing lower-bound validation test.
+    def test_below_range(self):
+        with self.assertRaises(ValueError):
+            validate_in_range([LO - 1e-6], LO, HI)
 
 
 class TestLineCreation(unittest.TestCase):
@@ -52,13 +59,14 @@ class TestPair(unittest.TestCase):
 
     def test_intersect(self):
         l1 = line_from_general(1.0, 0.0, 0.0)
-        l2 = line_from_general(0.0, 1.0, 0.0) 
+        l2 = line_from_general(0.0, 1.0, 0.0)
         p = intersection_point(l1, l2)
         self.assertIsNotNone(p)
         self.assertAlmostEqual(p[0], 0.0, places=7)
         self.assertAlmostEqual(p[1], 0.0, places=7)
-
-    def test_A0_B0_C0(self):
+    
+    # CHANGED: renamed test to better describe the scenario.
+    def test_axis_aligned_intersection(self):
         l_y2 = line_from_general(0.0, 1.0, -2.0)
         l_x3 = line_from_general(1.0, 0.0, -3.0)
         p = intersection_point(l_y2, l_x3)
@@ -66,20 +74,29 @@ class TestPair(unittest.TestCase):
         self.assertAlmostEqual(p[0], 3.0, places=7)
         self.assertAlmostEqual(p[1], 2.0, places=7)
 
+# CHANGED: added dedicated tests for unique_points.
+class TestUniquePoints(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual(unique_points([]), [])
+
+    def test_duplicates(self):
+        pts = [(1.0, 2.0), (1.0, 2.0), (3.0, 4.0)]
+        self.assertEqual(unique_points(pts), [(1.0, 2.0), (3.0, 4.0)])
+
 
 class TestThree(unittest.TestCase):
     def test_three_points(self):
-        L0 = line_from_general(1.0, 1.0, -1.0)  
-        L1 = line_from_general(0.0, 1.0, 0.0)  
-        L2 = line_from_general(1.0, 0.0, 0.0) 
+        L0 = line_from_general(1.0, 1.0, -1.0)
+        L1 = line_from_general(0.0, 1.0, 0.0)
+        L2 = line_from_general(1.0, 0.0, 0.0)
         res = analyze_three(L0, L1, L2)
         self.assertIsNone(res["special"])
         self.assertEqual(len(res["unique_points"]), 3)
 
     def test_two_points(self):
-        L0 = line_from_general(0.0, 1.0, 0.0)  
-        L1 = line_from_general(0.0, 1.0, -1.0)  
-        L2 = line_from_general(1.0, 0.0, 0.0)   
+        L0 = line_from_general(0.0, 1.0, 0.0)
+        L1 = line_from_general(0.0, 1.0, -1.0)
+        L2 = line_from_general(1.0, 0.0, 0.0)
         res = analyze_three(L0, L1, L2)
         self.assertIsNone(res["special"])
         self.assertEqual(len(res["unique_points"]), 2)
@@ -92,19 +109,28 @@ class TestThree(unittest.TestCase):
         self.assertEqual(res["special"], "all_three_coincident")
 
     def test_two_coincident_third_parallel(self):
-        L0 = line_from_general(0.0, 1.0, 0.0)   
-        L1 = line_from_general(0.0, 2.0, 0.0)   
-        L2 = line_from_general(0.0, 1.0, -1.0)  
+        L0 = line_from_general(0.0, 1.0, 0.0)
+        L1 = line_from_general(0.0, 2.0, 0.0)
+        L2 = line_from_general(0.0, 1.0, -1.0)
         res = analyze_three(L0, L1, L2)
         self.assertEqual(res["special"], "two_coincident_third_parallel")
 
     def test_two_coincident_third_intersects(self):
         L0 = line_from_general(1.0, 1.0, 1.0)
-        L1 = line_from_general(2.0, 2.0, 2.0)   
-        L2 = line_from_general(1.0, -1.0, 0.0)  
+        L1 = line_from_general(2.0, 2.0, 2.0)
+        L2 = line_from_general(1.0, -1.0, 0.0)
         res = analyze_three(L0, L1, L2)
         self.assertEqual(res["special"], "two_coincident_third_intersects")
         self.assertEqual(len(res["unique_points"]), 1)
+
+    # CHANGED: added missing case of three parallel non-coincident lines.
+    def test_three_parallel_lines(self):
+        L0 = line_from_general(0.0, 1.0, 0.0)
+        L1 = line_from_general(0.0, 1.0, -1.0)
+        L2 = line_from_general(0.0, 1.0, -2.0)
+        res = analyze_three(L0, L1, L2)
+        self.assertIsNone(res["special"])
+        self.assertEqual(res["unique_points"], [])
 
 
 if __name__ == "__main__":

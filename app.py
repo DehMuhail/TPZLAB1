@@ -4,8 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-from typing import Tuple
+# CHANGED: added List for type annotations in plot_lines.
+from typing import List, Tuple
+
 from geometry import (
+    # CHANGED: imported LineABC for plot_lines type annotation.
+    LineABC,
     line_from_general,
     line_from_point_normal,
     validate_in_range,
@@ -31,9 +35,9 @@ def _read_floats(prompt: str, count: int) -> Tuple[float, ...]:
 def _fmt_point(p: Tuple[float, float]) -> str:
     return f"({p[0]:.6f}, {p[1]:.6f})"
 
-def plot_lines(lines, intersection_points):
+
+def plot_lines(lines: List[LineABC], intersection_points: List[Tuple[float, float]]) -> None:
     x_min, x_max = RANGE_LO, RANGE_HI
-    y_min, y_max = RANGE_LO, RANGE_HI
 
     x_vals = np.linspace(x_min, x_max, 1200)
 
@@ -42,28 +46,32 @@ def plot_lines(lines, intersection_points):
 
         if abs(B) > 1e-9:
             y_vals = (-A * x_vals - C) / B
-            plt.plot(x_vals, y_vals, label=f"L{i}")
+            plt.plot(x_vals, y_vals, label=f"L{i}", linewidth=2)
         else:
             if abs(A) > 1e-9:
                 x_const = -C / A
                 plt.axvline(x=x_const, label=f"L{i}")
 
     for idx, p in enumerate(intersection_points):
-        plt.scatter(p[0], p[1], s=80)
+        plt.scatter(p[0], p[1], s=120, zorder=5)
         plt.annotate(f"P{idx+1}", (p[0], p[1]), textcoords="offset points", xytext=(6, 6))
 
     plt.xlim(x_min, x_max)
-    plt.ylim(y_min, y_max)
+    plt.ylim(RANGE_LO, RANGE_HI)
 
     plt.axhline(0)
     plt.axvline(0)
     plt.grid(True)
+    plt.margins(0.05)
     plt.legend()
-    plt.title("Visualization of 3 Lines ")
+
+    # CHANGED: removed trailing space in title string.
+    plt.title("Visualization of 3 Lines")
 
     plt.gca().set_aspect("equal", adjustable="box")
 
     plt.show()
+
 
 def main() -> None:
     print("Lab: 3 lines, variant (1,6,6), input range [-146; 146]")
@@ -117,5 +125,7 @@ def main() -> None:
         )
 
     plot_lines([L0, L1, L2], uniq)
+
+
 if __name__ == "__main__":
     main()
